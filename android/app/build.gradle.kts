@@ -3,7 +3,6 @@ import java.io.FileInputStream
 
 plugins {
     id("com.android.application")
-    id("kotlin-android")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
 }
@@ -16,10 +15,6 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
-    }
-
-    kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_17.toString()
     }
 
     defaultConfig {
@@ -53,7 +48,7 @@ android {
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(
-                getDefaultProguardFile("proguard-android.txt"),
+                getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )            
             signingConfig = signingConfigs.getByName("release")
@@ -65,6 +60,12 @@ android {
     }
 }
 
+kotlin {
+    compilerOptions {
+        jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17
+    }
+}
+
 flutter {
     source = "../.."
 }
@@ -72,7 +73,7 @@ flutter {
 dependencies {
     // AndroidX Activity for registerForActivityResult support
     implementation("androidx.activity:activity-ktx:1.12.4")
-    implementation("androidx.fragment:fragment-ktx:	1.8.9")
+    implementation("androidx.fragment:fragment-ktx:1.8.9")
     
     // Kotlin Coroutines for background file operations
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
