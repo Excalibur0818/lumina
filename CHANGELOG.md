@@ -8,7 +8,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-- 修复脚注的渲染
+## [v0.2.4] - 2026-09-19
+
+### English
+
+#### Fixed
+
+- Fixed footnote rendering issues to improve display accuracy and stability
+- Upgraded the Flutter version for better compatibility
+- Improved application performance and overall responsiveness
+
+### Chinese
+
+#### 变更与优化
+
+- 修复脚注渲染异常，提升内容显示的准确性与稳定性
+- 升级 Flutter 版本，改善项目兼容性
+- 优化应用性能，提升整体运行流畅度
 
 ## [v0.2.3] - 2026-03-13
 
