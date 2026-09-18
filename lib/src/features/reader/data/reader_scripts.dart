@@ -28,33 +28,13 @@ String generateSkeletonHtml(
   final safeWidth = viewWidth.floor();
   final safeHeight = viewHeight.floor();
 
-  final colorScheme = theme.colorScheme;
-  final primaryColor = theme.overridePrimaryColor ?? colorScheme.primary;
+  var initialConfigMap = theme.toThemeMap();
+  initialConfigMap['safeWidth'] = safeWidth;
+  initialConfigMap['safeHeight'] = safeHeight;
+  initialConfigMap['direction'] = direction;
+  initialConfigMap['paginationCss'] = kPaginationCss;
 
-  final initialConfigJson = jsonEncode({
-    'safeWidth': safeWidth,
-    'safeHeight': safeHeight,
-    'padding': {'top': theme.padding.top, 'left': theme.padding.left},
-    'direction': direction,
-    'theme': {
-      'zoom': theme.zoom,
-      'lineHeight': theme.lineHeight,
-
-      'shouldOverrideTextColor': theme.shouldOverrideTextColor,
-      'primaryColor': colorToMap(primaryColor),
-      'primaryContainerColor': colorToMap(colorScheme.primaryContainer),
-      'surfaceColor': colorToMap(colorScheme.surface),
-      'onSurfaceColor': colorToMap(colorScheme.onSurface),
-      'onSurfaceVariantColor': colorToMap(colorScheme.onSurfaceVariant),
-      'outlineVariantColor': colorToMap(colorScheme.outlineVariant),
-      'surfaceContainerColor': colorToMap(colorScheme.surfaceContainer),
-      'surfaceContainerHighColor': colorToMap(colorScheme.surfaceContainerHigh),
-
-      'fontFileName': theme.fontFileName,
-      'overrideFontFamily': theme.overrideFontFamily,
-    },
-    'paginationCss': kPaginationCss,
-  });
+  final initialConfigJson = jsonEncode(initialConfigMap);
 
   return '''
 <!DOCTYPE html>
