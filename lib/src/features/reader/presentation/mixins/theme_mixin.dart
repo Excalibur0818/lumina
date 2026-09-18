@@ -1,7 +1,6 @@
 part of '../reader_screen.dart';
 
 mixin _ThemeMixin on ConsumerState<ReaderScreen> {
-  // === Borrowed state (provided by _ReaderScreenState fields) ===
   ReaderRendererController get rendererController;
 
   ThemeData? get currentTheme;
@@ -14,7 +13,7 @@ mixin _ThemeMixin on ConsumerState<ReaderScreen> {
   set themeUpdateDebouncer(Timer? v);
 
   EpubTheme getEpubTheme() {
-    final settings = ref.read(readerSettingsNotifierProvider);
+    final settings = ref.read(readerSettingsProvider);
     return settings.toEpubTheme(context);
   }
 

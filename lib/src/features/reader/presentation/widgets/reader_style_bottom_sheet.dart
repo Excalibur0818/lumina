@@ -1,4 +1,4 @@
-﻿import 'dart:io';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -31,6 +31,7 @@ class _ReaderStyleBottomSheetState
     extends ConsumerState<ReaderStyleBottomSheet> {
   late double _scale;
   late double _lineHeight;
+  late bool _changeLineHeight;
   late int _topMargin;
   late int _bottomMargin;
   late int _leftMargin;
@@ -51,9 +52,10 @@ class _ReaderStyleBottomSheetState
   @override
   void initState() {
     super.initState();
-    final s = ref.read(readerSettingsNotifierProvider);
+    final s = ref.read(readerSettingsProvider);
     _scale = s.zoom;
     _lineHeight = s.lineHeight;
+    _changeLineHeight = s.changeLineHeight;
     _topMargin = s.marginTop.toInt();
     _bottomMargin = s.marginBottom.toInt();
     _leftMargin = s.marginLeft.toInt();
@@ -74,7 +76,7 @@ class _ReaderStyleBottomSheetState
   }
 
   ReaderSettingsNotifier get _notifier =>
-      ref.read(readerSettingsNotifierProvider.notifier);
+      ref.read(readerSettingsProvider.notifier);
 
   @override
   Widget build(BuildContext context) {
@@ -196,7 +198,7 @@ class _ReaderStyleBottomSheetState
                     ),
                   ],
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 8),
                 ReaderScaleSlider(
                   value: _scale,
                   onChanged: (v) {
@@ -212,27 +214,49 @@ class _ReaderStyleBottomSheetState
                   children: [
                     SettingsSubLabel(label: l10n.readerLineHeight),
                     const Spacer(),
-                    Text(
-                      '${_lineHeight.toStringAsFixed(1)}x',
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
-                        fontFeatures: const [FontFeature.tabularFigures()],
+                    if (_changeLineHeight)
+                      Text(
+                        '${_lineHeight.toStringAsFixed(1)}x',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+                          fontFeatures: const [FontFeature.tabularFigures()],
+                        ),
                       ),
-                    ),
                   ],
                 ),
-                const SizedBox(height: 4),
-                ReaderLineHeightSlider(
-                  value: _lineHeight,
-                  onChanged: (v) {
-                    setState(() => _lineHeight = v);
-                    _notifier.setLineHeight(v);
-                  },
+                const SizedBox(height: 8),
+
+                AnimatedSize(
+                  duration: const Duration(
+                    milliseconds: AppTheme.defaultAnimationDurationMs,
+                  ),
+                  curve: Curves.easeInOut,
+                  child: _changeLineHeight
+                      ? Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: ReaderLineHeightSlider(
+                            value: _lineHeight,
+                            onChanged: (v) {
+                              setState(() => _lineHeight = v);
+                              _notifier.setLineHeight(v);
+                            },
+                          ),
+                        )
+                      : const SizedBox(height: 0, width: double.infinity),
                 ),
 
+                LabeledSwitchTile(
+                  label: l10n.readerChangeLineHeight,
+                  value: _changeLineHeight,
+                  icon: Icons.format_line_spacing_outlined,
+                  onChanged: (v) {
+                    setState(() => _changeLineHeight = v);
+                    _notifier.setChangeLineHeight(v);
+                  },
+                ),
 
                 const SizedBox(height: 20),
 
