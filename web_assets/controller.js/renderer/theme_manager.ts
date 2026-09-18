@@ -52,7 +52,7 @@ export class ThemeManager {
 
     return fontFaceBlock + ' :root {'
       + `--lumina-zoom: ${t.zoom};`
-      + (t.lineHeight === null ? `--lumina-line-height: ${t.lineHeight};` : ``)
+      + (t.lineHeight !== null ? `--lumina-line-height: ${t.lineHeight};` : ``)
       + `--lumina-safe-width: ${cfg.safeWidth}px;`
       + `--lumina-safe-height: ${cfg.safeHeight}px;`
       + `--lumina-padding-top: ${cfg.padding.top}px;`

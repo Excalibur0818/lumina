@@ -319,11 +319,12 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen>
 
     ref.listen(readerSettingsProvider, (previous, next) {
       if (previous != null && previous != next) {
-        // If zoom changed, use debounce to avoid excessive WebView reloads while dragging the slider
+        // If zoom/line_height changed, use debounce to avoid excessive WebView reloads while dragging the slider
         if (previous.fontFileName != next.fontFileName ||
             previous.overrideFontFamily != next.overrideFontFamily) {
           updateWebViewTheme();
-        } else if (previous.zoom != next.zoom) {
+        } else if (previous.zoom != next.zoom ||
+            previous.lineHeight != next.lineHeight) {
           updateWebViewThemeWithDebounce();
         } else {
           updateWebViewTheme();
@@ -331,14 +332,14 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen>
       }
     });
 
-    ref.listen(
-      readerSettingsProvider.select((s) => s.volumeKeyTurnsPage),
-      (previous, next) {
-        if (previous != next) {
-          setupVolumeControl();
-        }
-      },
-    );
+    ref.listen(readerSettingsProvider.select((s) => s.volumeKeyTurnsPage), (
+      previous,
+      next,
+    ) {
+      if (previous != next) {
+        setupVolumeControl();
+      }
+    });
 
     final activeItems = resolveActiveItems();
     final activateTocTitle = activeItems.isNotEmpty

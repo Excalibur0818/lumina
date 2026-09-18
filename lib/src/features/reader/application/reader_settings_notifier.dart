@@ -50,6 +50,7 @@ class ReaderSettingsNotifier extends _$ReaderSettingsNotifier {
     return ReaderSettings().copyWith(
       zoom: prefs.getDouble(_kZoom),
       lineHeight: prefs.getDouble(_kLineHeight),
+      changeLineHeight: prefs.getBool(_kChangeLineHeight),
       followAppTheme: prefs.getBool(_kFollowApp),
       themeIndex: prefs.getInt(_kThemeMode),
       marginTop: prefs.getDouble(_kMarginTop),

@@ -12,6 +12,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### English
 
+#### Added
+
+- Add support for line height adjustment
+
 #### Fixed
 
 - Fixed footnote rendering issues to improve display accuracy and stability
@@ -19,6 +23,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Improved application performance and overall responsiveness
 
 ### Chinese
+
+#### 新增
+
+- 添加行高调整支持
 
 #### 变更与优化
 

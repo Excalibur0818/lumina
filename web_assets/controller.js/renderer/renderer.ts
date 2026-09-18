@@ -236,6 +236,7 @@ export class Renderer implements LuminaApi {
       requestAnimationFrame(() => {
         const shouldOverrideColor = this.state.config.theme.shouldOverrideTextColor
           && !this.themeMgr.haveBackground(iframe);
+        doc.body.classList.toggle('lumina-apply-line-height', this.state.config.theme.lineHeight !== null);
         doc.body.classList.toggle('lumina-override-color', shouldOverrideColor);
         doc.body.classList.toggle(
           'lumina-force-override-font',

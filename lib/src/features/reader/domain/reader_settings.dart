@@ -113,7 +113,8 @@ class ReaderSettings {
 
     return EpubTheme(
       zoom: zoom,
-      lineHeight: changeLineHeight ? lineHeight : null,
+      lineHeight: lineHeight,
+      changeLineHeight: changeLineHeight,
       shouldOverrideTextColor: preset.shouldOverrideTextColor,
       colorScheme: colorScheme,
       overridePrimaryColor: preset.overridePrimaryColor,

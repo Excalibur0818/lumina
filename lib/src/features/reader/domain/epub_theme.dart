@@ -4,7 +4,8 @@ import 'package:lumina/src/features/reader/data/reader_scripts.dart';
 
 class EpubTheme {
   final double zoom;
-  final double? lineHeight;
+  final double lineHeight;
+  final bool changeLineHeight;
   final bool shouldOverrideTextColor;
   final ColorScheme colorScheme;
   final Color? overridePrimaryColor;
@@ -18,7 +19,8 @@ class EpubTheme {
 
   EpubTheme({
     required this.zoom,
-    this.lineHeight,
+    required this.lineHeight,
+    required this.changeLineHeight,
     required this.shouldOverrideTextColor,
     required this.colorScheme,
     this.overridePrimaryColor,
@@ -36,6 +38,7 @@ class EpubTheme {
   EpubTheme copyWith({
     double? zoom,
     double? lineHeight,
+    bool? changeLineHeight,
     bool? shouldOverrideTextColor,
     ColorScheme? colorScheme,
     Color? overridePrimaryColor,
@@ -46,6 +49,7 @@ class EpubTheme {
     return EpubTheme(
       zoom: zoom ?? this.zoom,
       lineHeight: lineHeight ?? this.lineHeight,
+      changeLineHeight: changeLineHeight ?? this.changeLineHeight,
       shouldOverrideTextColor:
           shouldOverrideTextColor ?? this.shouldOverrideTextColor,
       colorScheme: colorScheme ?? this.colorScheme,
@@ -65,7 +69,7 @@ class EpubTheme {
       'padding': {'top': padding.top, 'left': padding.left},
       'theme': {
         'zoom': zoom,
-        'lineHeight': lineHeight,
+        'lineHeight': changeLineHeight ? lineHeight : null,
         'shouldOverrideTextColor': shouldOverrideTextColor,
 
         'primaryColor': overridePrimaryColor != null
@@ -99,6 +103,7 @@ class EpubTheme {
     return other is EpubTheme &&
         other.zoom == zoom &&
         other.lineHeight == lineHeight &&
+        other.changeLineHeight == changeLineHeight &&
         other.shouldOverrideTextColor == shouldOverrideTextColor &&
         other.colorScheme == colorScheme &&
         other.overridePrimaryColor == overridePrimaryColor &&
@@ -111,6 +116,7 @@ class EpubTheme {
   int get hashCode => Object.hash(
     zoom,
     lineHeight,
+    changeLineHeight,
     shouldOverrideTextColor,
     colorScheme,
     overridePrimaryColor,
