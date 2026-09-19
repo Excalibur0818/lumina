@@ -32,10 +32,6 @@ class ShelfBook {
   @Index()
   late String title;
 
-  /// Primary author (first author if multiple)
-  @Index()
-  late String author;
-
   /// All authors as a list
   late List<String> authors;
 
@@ -77,9 +73,6 @@ class ShelfBook {
   @Index()
   int? lastOpenedDate;
 
-  /// Whether the book has been marked as finished
-  bool isFinished = false;
-
   // ==================== BOOKSHELF MANAGEMENT ====================
 
   /// Group name for organizing books (replaces groupId)
@@ -87,24 +80,11 @@ class ShelfBook {
   @Index()
   String? groupName;
 
-  /// Soft delete flag (for trash/sync safety)
-  @Index()
-  bool isDeleted = false;
-
   // ==================== SYNC ====================
 
   /// Last modification timestamp (milliseconds since epoch, for conflict resolution)
   @Index()
   late int updatedAt;
-
-  /// Sync status: null = not synced, timestamp = last sync time
-  int? lastSyncedDate;
-
-  // ==================== UI STATE (NOT SYNCED) ====================
-
-  /// Whether the book is currently being downloaded (transient UI state)
-  @ignore
-  bool isDownloading = false;
 }
 
 String directionToString(int direction) {

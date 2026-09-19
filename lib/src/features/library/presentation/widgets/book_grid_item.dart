@@ -59,9 +59,9 @@ class BookGridItem extends ConsumerWidget {
         const SizedBox(height: 12),
         MiddleEllipsisTwoLinesText(book.title),
         const SizedBox(height: 4),
-        if (book.author.isNotEmpty)
+        if (book.authors.isNotEmpty)
           Text(
-            book.author,
+            book.authors.first,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
@@ -69,7 +69,7 @@ class BookGridItem extends ConsumerWidget {
               fontSize: 12,
             ),
           ),
-        if (book.readingProgress > 0 && !book.isDeleted)
+        if (book.readingProgress > 0)
           Padding(
             padding: const EdgeInsets.only(top: 8),
             child: ClipRRect(
@@ -261,7 +261,7 @@ class BookGridItem extends ConsumerWidget {
 
   /// Frosted-glass percentage badge (comfortable / compact modes).
   Widget _buildProgressBadge(BuildContext context) {
-    if (book.readingProgress <= 0 || book.isFinished || isSelectionMode) {
+    if (book.readingProgress <= 0 || isSelectionMode) {
       return const SizedBox.shrink();
     }
     return Positioned(

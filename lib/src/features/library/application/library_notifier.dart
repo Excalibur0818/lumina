@@ -1,19 +1,22 @@
 import 'dart:io';
+
 import 'package:flutter/material.dart';
-import 'package:lumina/src/core/file_handling/file_handling.dart';
-import 'package:lumina/src/features/library/application/progress_log.dart';
-import 'package:lumina/src/features/library/data/services/import_backup_service_provider.dart';
-import 'package:lumina/src/features/library/data/services/unified_import_service_provider.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:fpdart/fpdart.dart';
-import '../domain/shelf_book.dart';
+import 'package:lumina/src/core/platform/platform.dart';
+import 'package:lumina/src/core/widgets/progress_dialog.dart';
+import 'package:lumina/src/features/library/data/services/epub_import_service_provider.dart';
+import 'package:lumina/src/features/library/data/services/import_file_pipeline_provider.dart';
+import 'package:riverpod_annotation/riverpod_annotation.dart';
+
 import '../data/repositories/shelf_book_repository_provider.dart';
-import '../data/services/epub_import_service_provider.dart';
+import '../domain/shelf_book.dart';
+import 'bookshelf_notifier.dart';
 
 part 'library_notifier.g.dart';
 
 enum ImportStatus { processing, success, failed }
 
+/// Progress event emitted for each book while an import batch runs.
 class ImportProgress extends ProgressLog {
   final int totalCount;
   final int currentCount;
@@ -43,107 +46,26 @@ class ImportProgress extends ProgressLog {
        );
 }
 
-/// State for library operations (updated for ShelfBook)
-sealed class LibraryState {}
-
-class LibraryInitial extends LibraryState {}
-
-class LibraryLoading extends LibraryState {}
-
-class LibraryLoaded extends LibraryState {
-  final List<ShelfBook> books;
-  LibraryLoaded(this.books);
-}
-
-class LibraryError extends LibraryState {
-  final String message;
-  LibraryError(this.message);
-}
-
-/// Notifier for managing library operations with dependency injection
+/// Drives the book import batch and exposes it to the library UI.
 ///
-/// Must stay alive: `importPipelineStream` and `importLibraryFromFolder` are
-/// long-running generators that keep using `ref` and `state` across many async
-/// gaps. With the default `autoDispose`, the provider is disposed as soon as no
-/// widget is listening (e.g. the library screen is unmounted while the import
-/// progress dialog is showing), which makes every later `ref.read`/`state`
-/// assignment throw "Cannot use the Ref ... after it has been disposed".
+/// This notifier deliberately holds **no UI state**: the shelf renders from
+/// `bookshelfProvider`, and the import dialog renders from the stream returned
+/// by [importPipelineStream]. It exists to give that stream a `Ref` that
+/// survives its many async gaps, which is also why it must stay alive — with
+/// the default `autoDispose` the provider would be torn down as soon as no
+/// widget is listening (for example while the import progress dialog is the
+/// only thing on screen), and every later `ref.read` inside the generator would
+/// throw "Cannot use the Ref ... after it has been disposed".
+///
+/// Restoring a backup lives in
+/// `features/backup/application/backup_notifier.dart` instead, so that the
+/// library feature never depends on the backup feature.
 @Riverpod(keepAlive: true)
 class LibraryNotifier extends _$LibraryNotifier {
   @override
-  Future<LibraryState> build() async {
-    return await _loadBooks();
-  }
+  void build() {}
 
-  /// Load all books from database
-  Future<LibraryState> _loadBooks() async {
-    try {
-      final repository = ref.read(shelfBookRepositoryProvider);
-      final books = await repository.getAllBooks();
-      return LibraryLoaded(books);
-    } catch (e) {
-      return LibraryError('Failed to load books: $e');
-    }
-  }
-
-  /// Import a new book from file
-  Future<Either<String, ShelfBook>> importBook(File file) async {
-    state = const AsyncValue.loading();
-
-    try {
-      final importService = ref.read(epubImportServiceProvider);
-      // Single call to import service handles everything
-      final importResult = await importService.importBook(file);
-
-      if (importResult.isLeft()) {
-        final error = importResult.getLeft().toNullable()!;
-        state = AsyncValue.data(LibraryError(error));
-        return left(error);
-      }
-
-      final book = importResult.getRight().toNullable()!;
-
-      // Reload books to update UI
-      state = await AsyncValue.guard(() => _loadBooks());
-
-      return right(book);
-    } catch (e) {
-      final error = 'Import failed: $e';
-      state = AsyncValue.data(LibraryError(error));
-      return left(error);
-    }
-  }
-
-  Stream<ProgressLog> importLibraryFromFolder(BackupPaths backupPaths) async* {
-    yield ProgressLog(
-      'Starting import from folder: ${backupPaths.rootPath}',
-      ProgressLogType.info,
-    );
-
-    final importService = ref.read(importBackupServiceProvider);
-
-    try {
-      await for (final progress in importService.importLibraryFromFolder(
-        backupPaths,
-      )) {
-        yield progress;
-      }
-    } catch (e) {
-      yield ProgressLog(
-        'Failed to import from folder: $e',
-        ProgressLogType.error,
-      );
-      debugPrint('Import from folder error: $e');
-    }
-
-    yield ProgressLog(
-      'Import from folder completed. Refreshing library...',
-      ProgressLogType.success,
-    );
-    await refresh();
-  }
-
-  /// Stream pipeline to process files one by one: Cache -> Import -> Clean.
+  /// Stream pipeline to process files one by one: Cache → Import → Clean.
   /// This prevents OOM and storage issues when importing massive folders.
   Stream<ProgressLog> importPipelineStream(List<PlatformPath> paths) async* {
     yield ProgressLog(
@@ -153,7 +75,7 @@ class LibraryNotifier extends _$LibraryNotifier {
     final totalCount = paths.length;
     if (totalCount == 0) return;
 
-    final unifiedImportService = ref.read(unifiedImportServiceProvider);
+    final pipeline = ref.read(importFilePipelineProvider);
     final epubImportService = ref.read(epubImportServiceProvider);
 
     int currentCount = 0;
@@ -174,7 +96,7 @@ class LibraryNotifier extends _$LibraryNotifier {
         );
 
         // 2. Cache the file from URI to local temp directory
-        importable = await unifiedImportService.processEpub(path);
+        importable = await pipeline.cacheFileWithHash(path);
 
         yield ProgressLog(
           'Processing file $currentFileName ($currentCount of $totalCount)',
@@ -214,7 +136,7 @@ class LibraryNotifier extends _$LibraryNotifier {
         // 5. CRITICAL: Always clean up the temporary cache file IMMEDIATELY
         if (importable != null) {
           try {
-            await unifiedImportService.cleanCache(importable.cacheFile);
+            await pipeline.cleanCache(importable.cacheFile);
           } catch (cleanError) {
             debugPrint('Failed to clean cache file: $cleanError');
           }
@@ -228,42 +150,47 @@ class LibraryNotifier extends _$LibraryNotifier {
       'Import completed. Refreshing library...',
       ProgressLogType.success,
     );
-    await refresh();
+    await ref.read(bookshelfProvider.notifier).refresh();
   }
 
-  /// Refresh book list
-  Future<void> refresh() async {
-    state = await AsyncValue.guard(() => _loadBooks());
+  /// Imports a book from a local [file].
+  Future<Either<String, ShelfBook>> importBook(File file) async {
+    try {
+      final importService = ref.read(epubImportServiceProvider);
+      final importResult = await importService.importBook(file);
+
+      if (importResult.isLeft()) {
+        return left(importResult.getLeft().toNullable()!);
+      }
+
+      final book = importResult.getRight().toNullable()!;
+      await ref.read(bookshelfProvider.notifier).refresh();
+
+      return right(book);
+    } catch (e) {
+      return left('Import failed: $e');
+    }
   }
 
-  /// Delete a book (removes .epub file, cover, and database records)
+  /// Deletes a book: database records plus its `.epub` and cover files.
   Future<Either<String, bool>> deleteBook(int bookId) async {
     try {
       final repository = ref.read(shelfBookRepositoryProvider);
       final importService = ref.read(epubImportServiceProvider);
-
-      // Soft-delete first; only proceed with file cleanup when confirmed.
-      final result = await repository.softDeleteBook(bookId);
-      if (result.isLeft()) {
-        return left(result.getLeft().toNullable()!);
-      }
-      if (result.getRight().toNullable() == false) {
-        return left('Delete failed');
-      }
 
       final book = await repository.getBookById(bookId);
       if (book == null) {
         return left('Book not found');
       }
 
-      // Remove physical files + manifest record.
+      // Remove the database record, manifest record and physical files.
       final deleteResult = await importService.deleteBook(book);
       if (deleteResult.isLeft()) {
         return left(deleteResult.getLeft().toNullable()!);
       }
 
-      // Refresh list only after everything has succeeded.
-      await refresh();
+      // Refresh only after everything has succeeded.
+      await ref.read(bookshelfProvider.notifier).refresh();
 
       return right(true);
     } catch (e) {
@@ -271,7 +198,7 @@ class LibraryNotifier extends _$LibraryNotifier {
     }
   }
 
-  /// Update book group
+  /// Moves a book into [groupName], or to the root level when it is null.
   Future<Either<String, bool>> updateGroup({
     required int bookId,
     String? groupName,
@@ -284,7 +211,7 @@ class LibraryNotifier extends _$LibraryNotifier {
       );
 
       if (result.isRight()) {
-        await refresh();
+        await ref.read(bookshelfProvider.notifier).refresh();
       }
 
       return result;
