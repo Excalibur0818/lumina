@@ -11,7 +11,7 @@ import 'mixins/library_actions_mixin.dart';
 import 'widgets/book_grid_item.dart';
 import 'widgets/library_app_bar.dart';
 import 'widgets/library_selection_bar.dart';
-import 'widgets/style_bottom_sheet.dart';
+import 'widgets/speed_dial_root_button.dart';
 import '../../../../l10n/app_localizations.dart';
 
 /// Library Screen - Displays user's book collection with advanced bookshelf features
@@ -211,13 +211,16 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
     }
 
     return SpeedDial(
-      icon: Icons.add_outlined,
-      activeIcon: Icons.close_outlined,
+      // The root button is rendered by us: the package's own icon cross fade
+      // flickers on the "+" / "x" morph. See SpeedDialRootButton.
+      dialRoot: (_, open, toggleChildren) => SpeedDialRootButton(
+        open: open,
+        onPressed: toggleChildren,
+      ),
       overlayColor: Theme.of(context).colorScheme.scrim,
       overlayOpacity: 0.5,
       spaceBetweenChildren: 12,
       renderOverlay: true,
-      useRotationAnimation: true,
       children: [
         buildSpeedDialChild(
           Icons.file_present_outlined,
@@ -274,7 +277,12 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
               LibraryAppBar(
                 state: state,
                 tabController: _tabController!,
-                onSortPressed: () => _showStyleBottomSheet(context, ref, state),
+                onSortSelected: (sortBy) => ref
+                    .read(bookshelfProvider.notifier)
+                    .changeSortOrder(sortBy),
+                onViewModeSelected: (mode) => ref
+                    .read(bookshelfProvider.notifier)
+                    .changeViewMode(mode),
                 onSelectionToggle: () =>
                     ref.read(bookshelfProvider.notifier).toggleSelectionMode(),
                 onSelectAll: () =>
@@ -363,34 +371,6 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
           ],
         );
       },
-    );
-  }
-
-  void _showStyleBottomSheet(
-    BuildContext context,
-    WidgetRef ref,
-    BookshelfState state,
-  ) {
-    showModalBottomSheet(
-      context: context,
-      showDragHandle: true,
-      builder: (context) => SizedBox(
-        width: double.infinity,
-        child: StyleBottomSheet(
-          currentSort: state.sortBy,
-          onSortSelected: (sortBy) {
-            ref.read(bookshelfProvider.notifier).changeSortOrder(sortBy);
-            Navigator.pop(context);
-          },
-          currentViewMode: state.viewMode,
-          onViewModeSelected: (mode) {
-            ref.read(bookshelfProvider.notifier).changeViewMode(mode);
-            Navigator.pop(context);
-          },
-        ),
-      ),
-      scrollControlDisabledMaxHeightRatio: 0.75,
-      constraints: const BoxConstraints(maxWidth: double.infinity),
     );
   }
 
